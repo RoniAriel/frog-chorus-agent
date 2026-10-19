@@ -68,7 +68,6 @@ Most verify rejections were real catches: numbers the model computed or rounded 
 
 ## Limitations
 
-- **`run_python` is not a sandbox.** The code runs in a separate process with a timeout, but as the local user. It can still reach the file system, the network and environment variables. In production I would run it in a container with no network access and a read-only data mount.
 - **verify checks grounding, not correctness.** It confirms that every number came from a tool, not that the right query was run. The evaluation set covers correctness.
 - **It skips small integers** (10 or less), because list numbering and phrases like "2 nights" are too common to check meaningfully.
 - **The evaluation set is small.** 15/15 shows the agent works, but it can't separate the effect of each component. The next step is an ablation: the same questions with and without `verify`, and across models.
@@ -77,8 +76,7 @@ Most verify rejections were real catches: numbers the model computed or rounded 
 
 - Ablation: the evaluation with and without `verify`, and Haiku vs Sonnet for cost against accuracy
 - Retrieval over the thesis text (`search_thesis`), for questions that combine the data with the methods section
-- Human approval (LangGraph `interrupt`) before `run_python` executes
-- A container sandbox for `run_python`
+
 
 ## Running it
 
