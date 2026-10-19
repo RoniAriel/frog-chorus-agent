@@ -1,0 +1,39 @@
+{
+  "question": "How many recordings have 8 frogs?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT number_of_frogs, COUNT(DISTINCT recording_id) n_rec, COUNT(*) n_rows FROM transitions GROUP BY number_of_frogs ORDER BY 1"
+      },
+      "output": " number_of_frogs  n_rec  n_rows\n               3      1     435\n               4      5    1774\n               5     11    4122\n               6      6    2260\n               7      6    2684\n               8      3    1635"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(DISTINCT number_of_frogs) k, COUNT(*) n FROM transitions GROUP BY recording_id HAVING k>1 LIMIT 20"
+      },
+      "output": "Empty DataFrame\nColumns: [recording_id, k, n]\nIndex: []"
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, number_of_frogs, COUNT(*) n, MAX(MAX(frog_i,frog_j,frog_k)) maxid FROM transitions WHERE number_of_frogs=8 GROUP BY recording_id"
+      },
+      "output": "             recording_id  number_of_frogs   n  maxid\ntest1_2023-03-03_18-44-18                8 646      7\ntest1_2023-03-03_18-45-45                8 541      8\ntest1_2023-03-03_19-05-14                8 448      8"
+    },
+    {
+      "step": 4,
+      "answer": "**3 recordings have 8 frogs.** They are `test1_2023-03-03_18-44-18`, `test1_2023-03-03_18-45-45` and `test1_2023-03-03_19-05-14`. Together they have 1,635 call-sequence rows (646, 541 and 448).\n\n- **Consistency:** Each recording has a single `number_of_frogs` value. Across all recordings the counts are 1 with 3 frogs, 5 with 4, 11 with 5, 6 with 6, 6 with 7 and 3 with 8.\n- **Frog ids:** In two of the three recordings the highest frog id is 8, which fits 8 frogs. In the first recording (18-44-18) the highest id is 7. Ids may start at 0 or 1, and a frog may never have appeared in a sequence where j and k differ.\n- **Small sample:** Three recordings is a small base for any further analysis of 8-frog choruses. They were all recorded on the same evening, 2023-03-03."
+    }
+  ]
+}

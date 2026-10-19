@@ -1,0 +1,31 @@
+{
+  "question": "How many recordings are in the dataset?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(DISTINCT recording_id), COUNT(*), MIN(substr(recording_id,1,10)), MAX(substr(recording_id,1,10)), COUNT(DISTINCT substr(recording_id,1,10)), SUM(recording_id IS NULL) FROM transitions"
+      },
+      "output": " COUNT(DISTINCT recording_id)  COUNT(*) MIN(substr(recording_id,1,10)) MAX(substr(recording_id,1,10))  COUNT(DISTINCT substr(recording_id,1,10))  SUM(recording_id IS NULL)\n                           32     12910                     2025-04-21                     test1_2023                                          2                          0"
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(*) n, MAX(number_of_frogs) FROM transitions GROUP BY recording_id ORDER BY recording_id"
+      },
+      "output": "             recording_id   n  MAX(number_of_frogs)\n      2025-04-21_20-02-27 150                     5\n      2025-04-21_20-05-43 230                     6\n      2025-04-21_20-35-00 316                     6\n      2025-04-21_20-36-54 255                     6\n      2025-04-21_20-38-55 481                     7\n      2025-04-21_20-40-25 369                     7\n      2025-04-21_20-44-35 428                     6\n      2025-04-21_20-49-04 329                     5\n      2025-04-21_20-53-42 336                     5\n      2025-04-21_20-55-49 164                     4\ntest1_2023-03-03_18-40-41 512                     7\ntest1_2023-03-03_18-42-26 521                     5\ntest1_2023-03-03_18-44-18 646                     8\ntest1_2023-03-03_18-45-45 541                     8\ntest1_2023-03-03_18-52-07 354                     5\ntest1_2023-03-03_18-53-41 161                     4\ntest1_2023-03-03_18-54-58 297                     5\ntest1_2023-03-03_18-57-41 359                     5\ntest1_2023-03-03_19-00-48 380                     5\ntest1_2023-03-03_19-02-21 352                     5\ntest1_2023-03-03_19-03-42 345                     7\ntest1_2023-03-03_19-05-14 448                     8\ntest1_2023-03-03_19-06-41 433                     7\ntest1_2023-03-03_19-08-26 554                     6\ntest1_2023-03-03_19-12-43 435                     3\ntest1_2023-03-03_19-14-40 535                     4\ntest1_2023-03-03_19-39-15 423                     5\ntest1_2023-03-03_19-41-20 544                     7\ntest1_2023-03-03_19-43-19 477                     6\ntest1_2023-03-03_19-44-40 429                     4\ntest1_2023-03-03_19-46-42 621                     5\ntest1_2023-03-03_19-49-56 485                     4"
+    },
+    {
+      "step": 4,
+      "answer": "There are **32 recordings** in the dataset, counted as distinct `recording_id` values across 12,910 transition rows.\n\n- **2025-04-21:** 10 recordings, made between 20:02 and 20:55.\n- **2023-03-03:** 22 recordings, made between 18:40 and 19:49. Their IDs carry a `test1_` prefix, for example `test1_2023-03-03_18-40-41`.\n\n**Caveats:**\n- The `test1_` prefix suggests the 2023 recordings may be test or pilot data, and they could differ from the 2025 ones in setup. I'd check that before pooling the two sets.\n- Each recording has a different set of frogs, so frog ids can't be compared across recordings.\n- Recordings can have as few as 150 rows, so sample sizes vary a lot between them."
+    }
+  ]
+}

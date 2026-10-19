@@ -1,0 +1,10 @@
+graph = StateGraph(AgentState)
+graph.add_node("agent", agent)
+# A failing tool returns its error as a normal result, so the model can fix itself next round
+graph.add_node("tools", ToolNode(TOOLS, handle_tool_errors=lambda e: f"ERROR: {type(e).__name__}: {e}"))
+graph.add_node("verify", verify)
+graph.add_edge(START, "agent")
+graph.add_conditional_edges("agent", after_agent, ["tools", "verify"])
+graph.add_edge("tools", "agent")
+graph.add_conditional_edges("verify", after_verify, ["agent", END])
+return graph.compile()

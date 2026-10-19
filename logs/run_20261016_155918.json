@@ -1,0 +1,39 @@
+{
+  "question": "What is the average number of frogs per recording?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "WITH r AS (SELECT recording_id, COUNT(*) n_rows, MIN(number_of_frogs) mn, MAX(number_of_frogs) mx FROM transitions GROUP BY recording_id)\nSELECT COUNT(*) n_rec, SUM(mn<>mx) inconsistent, AVG(mn) avg_min, AVG(mx) avg_max, MIN(mn), MAX(mx), MIN(n_rows), AVG(n_rows), (SELECT AVG(number_of_frogs) FROM transitions) row_weighted FROM r"
+      },
+      "output": " n_rec  inconsistent  avg_min  avg_max  MIN(mn)  MAX(mx)  MIN(n_rows)  AVG(n_rows)  row_weighted\n    32             0    5.625    5.625        3        8          150     403.4375      5.765995"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "WITH f AS (SELECT recording_id, frog_i f FROM transitions UNION SELECT recording_id, frog_j FROM transitions UNION SELECT recording_id, frog_k FROM transitions),\nc AS (SELECT recording_id, COUNT(*) obs FROM f GROUP BY recording_id),\nr AS (SELECT recording_id, MAX(number_of_frogs) nf FROM transitions GROUP BY recording_id)\nSELECT AVG(obs), AVG(nf), SUM(obs<nf), SUM(obs>nf), COUNT(*) FROM c JOIN r USING(recording_id)"
+      },
+      "output": " AVG(obs)  AVG(nf)  SUM(obs<nf)  SUM(obs>nf)  COUNT(*)\n    5.625    5.625            0            0        32"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT glmm_mode, COUNT(DISTINCT recording_id) FROM transitions GROUP BY glmm_mode"
+      },
+      "output": "glmm_mode  COUNT(DISTINCT recording_id)\n   events                            32"
+    },
+    {
+      "step": 3,
+      "answer": "**Answer:** The average is **5.625 frogs per recording**. This is based on 32 recordings, and the number ranges from 3 to 8.\n\n- The `number_of_frogs` value is the same on every row within a recording. It also matches the number of distinct frog ids that appear in that recording's call sequences. I checked this in all 32 recordings.\n- Averaging over the 32 recordings gives the 5.625. Averaging over all 12,910 rows gives 5.77. That figure is biased upward because recordings with more frogs have more rows, so it isn't the right one to use.\n\n**Caveats:**\n- The data only includes recordings with at least one sequence where j and k are different frogs. Each recording has at least 150 rows, so none of them is very sparse.\n- Frog counts come from the dataset's own annotation. A frog that never called would not show up in the ids, but the counts and the observed ids agree here.\n- The 32 recordings may not be independent, because they could come from the same site or night. I didn't check that."
+    }
+  ]
+}

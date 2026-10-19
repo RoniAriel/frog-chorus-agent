@@ -1,0 +1,59 @@
+
+=== q01 [lookup] How many recordings are in the dataset?
+PASS | expected 32
+
+=== q02 [lookup] How many transitions are there in total?
+PASS | expected 12910
+
+=== q03 [lookup] Which recording has the fewest transitions?
+PASS | expected '2025-04-21_20-02-27'
+
+=== q04 [lookup] How many recordings were made on 2025-04-21?
+PASS | expected 10
+
+=== q05 [lookup] How many recordings have 8 frogs?
+PASS | expected 3
+
+=== q06 [aggregation] What is the median response delay (time_difference_j_k) in milliseconds?
+PASS | expected 20
+
+=== q07 [aggregation] What is the mean response delay in milliseconds on 2025-04-21?
+PASS | expected 51.98
+
+=== q08 [aggregation] Which recording has the loudest calls on average (peak_call_db_k)?
+PASS | expected 'test1_2023-03-03_18-44-18'
+
+=== q09 [aggregation] What fraction of transitions return to the frog that called two calls earlier (frog_i equals frog_k)? Give it as a percentage.
+PASS | expected 42.0
+
+=== q10 [aggregation] What is the average number of frogs per recording?
+PASS | expected 5.625
+
+=== q11 [data_quality] How many transitions have a negative response delay?
+PASS | expected 111
+
+=== q12 [data_quality] In how many recordings does frog id 0 appear?
+PASS | expected 5
+
+=== q13 [trap] Are frogs farther apart on 2025-04-21 than on 2023-03-03?
+PASS | PASS: The answer reports the gap (mean ~0.448 vs ~12.71, roughly 28-fold) and explicitly warns that the distances may not be comparable because of possible differences in units, scale, or calibration, so it avoids simply asserting that frogs were farther apart.
+
+=== q14 [trap] What is the average peak frequency of frog 3?
+PASS | PASS: The answer explicitly says "frog 3" is not one individual because ids are assigned per recording, and it gives the pooled figure only with that caveat rather than presenting it as a single frog's average (it also supplies per-recording and per-date breakdowns).
+
+=== q15 [trap] Do frogs respond faster to closer neighbors?
+PASS | PASS: The answer analyzes the relationship within recordings, finds near-zero correlations (mean rho of −0.02 in 2023 and +0.04 in 2025, pooled rho of −0.006), and concludes that frogs don't respond faster to closer neighbors, which matches the rubric.
+
+              mean  count
+category                 
+aggregation    1.0      5
+data_quality   1.0      2
+lookup         1.0      5
+trap           1.0      3
+
+Overall accuracy: 100% (15/15)
+Mean tool calls per question: 5.4
+Tool calls that worked on the first try: 98%
+Mean tokens per question: 15,687
+Verify rejections: 11 in 10 questions
+Saved outputs/eval_results.csv and outputs/eval_accuracy.png

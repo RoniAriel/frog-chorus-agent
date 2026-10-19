@@ -1,0 +1,10 @@
+def verify(state: AgentState):
+    answer = str(state["messages"][-1].text)
+    unsupported = check_answer(answer, state["messages"])
+    rejections = state.get("verify_rejections", 0)
+    if not unsupported or rejections >= MAX_VERIFY_RETRIES:
+        return {"unsupported_numbers": unsupported}
+    feedback = (f"Verification failed: these numbers in your answer do not appear in any tool result: "
+                f"{', '.join(unsupported)}. Compute them with a tool, or remove them from the answer.")
+    return {"messages": [HumanMessage(feedback)], "verify_rejections": rejections + 1,
+            "unsupported_numbers": unsupported}

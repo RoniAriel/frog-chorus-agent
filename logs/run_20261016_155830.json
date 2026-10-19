@@ -1,0 +1,47 @@
+{
+  "question": "What is the median response delay (time_difference_j_k) in milliseconds?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_python",
+      "input": {
+        "code": "df=query(\"select time_difference_j_k t, recording_id r from transitions\")\nprint(df.t.describe()); print(df.t.isna().sum(), (df.t<=0).sum(), (df.t%20!=0).sum())\nprint(df.t.median(), df.r.nunique())\nprint(df.t.quantile([.01,.05,.25,.5,.75,.95,.99]))\nprint(df.groupby(df.r.str[:10]).t.agg(['count','median']))"
+      },
+      "output": "count    12910.000000\nmean        38.367157\nstd        125.567140\nmin       -200.000000\n25%         20.000000\n50%         20.000000\n75%         40.000000\nmax      11680.000000\nName: t, dtype: float64\n0 1151 201\n20.0 32\n0.01      0.0\n0.05      0.0\n0.25     20.0\n0.50     20.0\n0.75     40.0\n0.95    120.0\n0.99    220.0\nName: t, dtype: float64\n            count  median\nr                        \n2025-04-21   3058    20.0\ntest1_2023   9852    20.0\n"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "select glmm_mode, count(*) from transitions group by 1"
+      },
+      "output": "glmm_mode  count(*)\n   events     12910"
+    },
+    {
+      "step": 3,
+      "tool": "run_python",
+      "input": {
+        "code": "print((df.t<0).sum(), (df.t==0).sum(), df[df.t%20!=0].t.head(10).tolist())\nprint(df[df.t>0].t.median(), df[df.t>=0].t.median())\nprint(df.r.head(3).tolist(), df[df.r.str.startswith('test')].r.unique()[:3])"
+      },
+      "output": "\nERROR: NameError: name 'df' is not defined"
+    },
+    {
+      "step": 4,
+      "tool": "run_python",
+      "input": {
+        "code": "df=query(\"select time_difference_j_k t, recording_id r from transitions\")\nprint((df.t<0).sum(), (df.t==0).sum(), df[df.t%20!=0].t.head(10).tolist())\nprint(df[df.t>0].t.median(), df[df.t>=0].t.median())\nprint(df[df.r.str.startswith('test')].r.unique()[:3])"
+      },
+      "output": "111 1040 [60.000000000000455, 20.00000000000364, 79.99999999999818, 19.99999999999818, 59.99999999999818, 19.99999999999909, 100.00000000000364, 40.00000000000728, 39.99999999999636, 20.00000000000182]\n20.0 20.0\n<StringArray>\n['test1_2023-03-03_18-54-58', 'test1_2023-03-03_19-43-19',\n 'test1_2023-03-03_19-39-15']\nLength: 3, dtype: str\n"
+    },
+    {
+      "step": 5,
+      "answer": "**The median response delay (`time_difference_j_k`) is 20 ms.** That is one video frame at 50 fps. It comes from all 12,910 call sequences, across 32 recordings.\n\n- **Spread:** The middle half of delays runs from 20 to 40 ms. The 95th percentile is 120 ms. The mean is 38 ms, pulled up by a few very long gaps, with a maximum of 11,680 ms.\n- **Robustness:** The median stays at 20 ms in each data group. Those groups are the 2025-04-21 recordings (3,058 rows) and the \"test1_2023\" recordings (9,852 rows). It is also 20 ms if I drop zero and negative values.\n- **Resolution:** 20 ms is the smallest step the video can record, so the median sits at the measurement floor. Most responses are within one or two frames, and the video can't tell finer differences apart.\n- **Data quirks:**\n  - 1,040 rows have a delay of exactly 0 ms.\n  - 111 rows are negative, down to −200 ms. That probably means the calls overlapped, or it is a measurement artifact.\n  - 201 values are not exact multiples of 20 ms. These look like floating-point rounding (for example 19.999…), so they don't affect the result.\n- **Pooling:** I pooled all recordings. Each recording has a different set of frogs, so the median describes calls overall, not any individual frog."
+    }
+  ]
+}

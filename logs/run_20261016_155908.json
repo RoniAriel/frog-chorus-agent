@@ -1,0 +1,31 @@
+{
+  "question": "What fraction of transitions return to the frog that called two calls earlier (frog_i equals frog_k)? Give it as a percentage.",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "select count(*), sum(frog_i=frog_k), avg(frog_i=frog_k)*100, sum(frog_i is null or frog_k is null), sum(frog_i=frog_j), count(distinct recording_id), min(number_of_frogs), sum(number_of_frogs=2) from transitions"
+      },
+      "output": " count(*)  sum(frog_i=frog_k)  avg(frog_i=frog_k)*100  sum(frog_i is null or frog_k is null)  sum(frog_i=frog_j)  count(distinct recording_id)  min(number_of_frogs)  sum(number_of_frogs=2)\n    12910                5424               42.013943                                      0                   0                            32                     3                       0"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "select number_of_frogs, count(*) n, avg(frog_i=frog_k)*100 pct, count(distinct recording_id) recs from transitions group by 1"
+      },
+      "output": " number_of_frogs    n       pct  recs\n               3  435 70.114943     1\n               4 1774 47.745209     5\n               5 4122 45.608928    11\n               6 2260 43.716814     6\n               7 2684 37.555887     6\n               8 1635 24.220183     3"
+    },
+    {
+      "step": 3,
+      "answer": "**42.0% of transitions return to the frog that called two calls earlier.** That is 5,424 of 12,910 transitions, across 32 recordings. No rows had missing frog ids.\n\n**The rate depends on group size.** It falls steadily as the number of frogs in the recording rises:\n\n| Frogs in recording | Transitions | Recordings | frog_i = frog_k |\n|---|---|---|---|\n| 3 | 435 | 1 | 70.1% |\n| 4 | 1,774 | 5 | 47.7% |\n| 5 | 4,122 | 11 | 45.6% |\n| 6 | 2,260 | 6 | 43.7% |\n| 7 | 2,684 | 6 | 37.6% |\n| 8 | 1,635 | 3 | 24.2% |\n\n**Caveats:**\n- **Pooled figure:** The 42.0% is a pooled figure. Recordings with many transitions and mid-sized groups dominate it, so it isn't a per-recording average.\n- **Chance level:** Frog i never equals frog j, and j never equals k. If frog k were picked at random from the frogs other than j, the chance of a return to i would be about 1/(n−1). That is about 50% with 3 frogs and about 14% with 8. I didn't compute this baseline, so it is only a rough reference. The rates here are higher than that for most group sizes, but I haven't tested this formally.\n- **Small samples:** The 3-frog row comes from a single recording, and the 8-frog row from only three."
+    }
+  ]
+}

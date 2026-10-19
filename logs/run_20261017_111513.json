@@ -1,0 +1,91 @@
+{
+  "question": "Which recording has the loudest calls on average (peak_call_db_k)?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1220
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 1825
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(*) n, COUNT(DISTINCT frog_k) frogs, AVG(peak_call_db_k) m, MIN(peak_call_db_k) mn, MAX(peak_call_db_k) mx, SUM(peak_call_db_k IS NULL) nulls FROM transitions GROUP BY recording_id ORDER BY m DESC LIMIT 15"
+      },
+      "output": "             recording_id   n  frogs         m     mn     mx  nulls\ntest1_2023-03-03_18-44-18 646      8 69.370430 55.985 77.362      0\ntest1_2023-03-03_19-46-42 621      5 68.893441 58.364 76.209      0\ntest1_2023-03-03_19-41-20 544      7 68.866914 59.934 76.208      0\ntest1_2023-03-03_19-44-40 429      4 68.641149 57.018 77.864      0\ntest1_2023-03-03_18-45-45 541      8 68.281079 56.868 76.599      0\ntest1_2023-03-03_19-02-21 352      5 68.106855 56.798 76.938      0\ntest1_2023-03-03_19-03-42 345      7 67.952820 55.430 76.772      0\ntest1_2023-03-03_18-40-41 512      7 67.874678 50.646 77.461      0\ntest1_2023-03-03_19-06-41 433      7 67.819852 57.777 77.490      0\ntest1_2023-03-03_19-00-48 380      5 67.524324 54.298 76.769      0\ntest1_2023-03-03_19-08-26 554      6 67.454325 55.369 76.544      0\ntest1_2023-03-03_19-43-19 477      6 67.375543 52.151 77.079      0\ntest1_2023-03-03_19-49-56 485      4 67.203303 50.526 76.559      0\ntest1_2023-03-03_19-05-14 448      8 66.933270 54.501 76.392      0\ntest1_2023-03-03_19-39-15 423      5 66.576560 57.767 77.652      0"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(DISTINCT recording_id), MIN(peak_call_db_k), MAX(peak_call_db_k), AVG(peak_call_db_k), COUNT(peak_call_db_k) FROM transitions"
+      },
+      "output": " COUNT(DISTINCT recording_id)  MIN(peak_call_db_k)  MAX(peak_call_db_k)  AVG(peak_call_db_k)  COUNT(peak_call_db_k)\n                           32               15.807               77.864            63.268679                  12910"
+    },
+    {
+      "step": 3,
+      "tokens": 2891
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,instr(recording_id,'_2023')+10) d, COUNT(*) n, COUNT(DISTINCT recording_id) r, AVG(peak_call_db_k) m, MIN(peak_call_db_k) FROM transitions GROUP BY d"
+      },
+      "output": "               d    n  r         m  MIN(peak_call_db_k)\n      2025-04-21 3058 10 51.045030               15.807\ntest1_2023-03-03 9852 22 67.062824               39.711"
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(*) n, AVG(peak_call_db_k) m FROM transitions GROUP BY recording_id ORDER BY m ASC LIMIT 5"
+      },
+      "output": "       recording_id   n         m\n2025-04-21_20-05-43 230 43.875474\n2025-04-21_20-02-27 150 47.544247\n2025-04-21_20-38-55 481 50.974694\n2025-04-21_20-40-25 369 51.062818\n2025-04-21_20-36-54 255 51.294282"
+    },
+    {
+      "step": 4,
+      "tokens": 3732
+    },
+    {
+      "step": 4,
+      "verify": "rejected",
+      "unsupported": [
+        "0.5"
+      ]
+    },
+    {
+      "step": 5,
+      "tokens": 3953
+    },
+    {
+      "step": 5,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT 69.370430 - 68.893441 AS top_gap, 67.062824 - 51.045030 AS session_gap"
+      },
+      "output": " top_gap  session_gap\n0.476989    16.017794"
+    },
+    {
+      "step": 6,
+      "tokens": 4500
+    },
+    {
+      "step": 6,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 6,
+      "answer": "I've now computed the two differences I had only estimated.\n\n**Recording `test1_2023-03-03_18-44-18` has the loudest calls on average.** Its mean peak_call_db_k is 69.37 dB, from 646 call sequences and 8 frogs.\n\nThe next recordings are close behind:\n\n| Recording | Mean dB |\n|---|---|\n| `test1_2023-03-03_18-44-18` | 69.37 |\n| `test1_2023-03-03_19-46-42` | 68.89 |\n| `test1_2023-03-03_19-41-20` | 68.87 |\n\n**Caveats:**\n- **The lead is small.** The top recording is 0.48 dB above the second. Individual calls within the top recording range from 55.99 to 77.36 dB, so the ranking among the top few is not clear-cut.\n- **The two sessions are not comparable.** The data has 22 recordings from 2023-03-03 (mean 67.06 dB) and 10 from 2025-04-21 (mean 51.05 dB). The 16.02 dB gap between sessions is more likely a difference in microphone, gain or distance than in the frogs. Raw dB values are therefore not comparable across the two dates. The 2023 winner is also the top recording overall, but the comparison with 2025 recordings isn't meaningful.\n- **Rows are call transitions, not unique calls.** Each recording's mean is taken over its transition rows, and recordings differ in how many rows they have.\n- **Frog ids are per recording.** I averaged over all rows in a recording and did not compare individual frogs."
+    }
+  ]
+}

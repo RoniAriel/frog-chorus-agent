@@ -1,0 +1,60 @@
+{
+  "question": "How many recordings have 8 frogs?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1209
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 1751
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT number_of_frogs, COUNT(DISTINCT recording_id) n_rec, COUNT(*) n_rows, COUNT(DISTINCT glmm_mode) FROM transitions GROUP BY number_of_frogs ORDER BY 1"
+      },
+      "output": " number_of_frogs  n_rec  n_rows  COUNT(DISTINCT glmm_mode)\n               3      1     435                          1\n               4      5    1774                          1\n               5     11    4122                          1\n               6      6    2260                          1\n               7      6    2684                          1\n               8      3    1635                          1"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(*) FROM (SELECT recording_id FROM transitions GROUP BY recording_id HAVING COUNT(DISTINCT number_of_frogs)>1)"
+      },
+      "output": " COUNT(*)\n        0"
+    },
+    {
+      "step": 3,
+      "tokens": 2194
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, number_of_frogs, COUNT(*) rows_, (SELECT COUNT(*) FROM (SELECT frog_i f FROM transitions t2 WHERE t2.recording_id=t.recording_id UNION SELECT frog_j FROM transitions t2 WHERE t2.recording_id=t.recording_id UNION SELECT frog_k FROM transitions t2 WHERE t2.recording_id=t.recording_id)) distinct_ids FROM transitions t WHERE number_of_frogs=8 GROUP BY recording_id"
+      },
+      "output": "             recording_id  number_of_frogs  rows_  distinct_ids\ntest1_2023-03-03_18-44-18                8    646             8\ntest1_2023-03-03_18-45-45                8    541             8\ntest1_2023-03-03_19-05-14                8    448             8"
+    },
+    {
+      "step": 4,
+      "tokens": 2557
+    },
+    {
+      "step": 4,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 4,
+      "answer": "**3 recordings have 8 frogs.** They are:\n\n- `test1_2023-03-03_18-44-18`, with 646 call sequences\n- `test1_2023-03-03_18-45-45`, with 541 call sequences\n- `test1_2023-03-03_19-05-14`, with 448 call sequences\n\nTogether they have 1,635 rows. In each one, the number of distinct frog IDs matches the `number_of_frogs` value of 8. No recording has more than one `number_of_frogs` value.\n\nThe three recordings were all made on 2023-03-03. Two of them were only about a minute apart, so they probably come from the same chorus. They are not independent samples. Other group sizes have more recordings (for example, 11 recordings with 5 frogs), so any comparison involving 8-frog groups rests on only these three."
+    }
+  ]
+}

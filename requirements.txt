@@ -1,0 +1,9 @@
+langgraph
+langchain-anthropic
+langchain-core
+anthropic
+pydantic
+python-dotenv
+pandas
+numpy
+matplotlib

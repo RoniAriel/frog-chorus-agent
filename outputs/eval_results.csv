@@ -1,0 +1,202 @@
+id,category,question,passed,note,tool_calls,tool_errors,first_try_ok,tokens,verify_rejections,seconds,answer
+q01,lookup,How many recordings are in the dataset?,True,expected 32,4,0,1.0,14135,1,11.0,"The dataset has **32 recordings**, with 12,910 call-sequence rows in total. The per-date counts below come from a query I ran after the check flagged the 22.
+
+| Date | Recordings |
+|---|---|
+| 2023-03-03 | 22 |
+| 2025-04-21 | 10 |
+
+- **Time spans:** the 2025 recordings were made between 20:02 and 20:55. The 2023 recordings were made between 18:40 and 19:49.
+- **Duplicates:** each distinct `recording_id` counts as one recording. I found no duplicates that differ only by case or whitespace.
+- **Caveat:** the 2023 recording IDs carry a `test1_` prefix, for example `test1_2023-03-03_18-40-41`. This may mean they come from a different session or setup than the 2025 ones. I'd check that before pooling the two sets in any analysis."
+q02,lookup,How many transitions are there in total?,True,expected 12910,5,0,1.0,14280,1,13.7,"There are **12,910 transitions** in total. Each row is one call sequence i→j→k in which j and k are different frogs.
+
+- **Recordings:** the rows come from 32 recordings of about one minute each. Per-recording counts range from 150 to 646.
+- **2025-04-21:** 10 recordings, with 3,058 transitions.
+- **2023-03-03:** 22 recordings, with 9,852 transitions. These have a `test1_2023-03-03_…` prefix.
+- **Mode:** every row has `glmm_mode` = ""events"", so there are no other subsets to separate.
+
+**Caveat:** the count only includes sequences where j and k differ. Repeat calls by the same frog aren't in the table. So 12,910 is not the total number of calls. Frog ids restart in each recording, so any per-frog analysis has to group by recording and frog id together. The two dates may differ in conditions. Check that before pooling them in later analyses."
+q03,lookup,Which recording has the fewest transitions?,True,expected '2025-04-21_20-02-27',6,0,1.0,14545,1,14.4,"The 11 now comes from a tool result. It is the gap between the fewest transitions (150) and the second-fewest (161).
+
+**Recording 2025-04-21_20-02-27 has the fewest transitions, with 150.** It has 5 frogs.
+
+The next lowest are:
+- test1_2023-03-03_18-53-41: 161 transitions, 4 frogs
+- 2025-04-21_20-55-49: 164 transitions, 4 frogs
+
+Across all 32 recordings, counts range from 150 to 646, with a mean of about 403.
+
+**Caveats:**
+- Each recording lasts about one minute, so the counts are comparable in time. They still depend on how many frogs were calling and how active they were.
+- A row only exists when j and k are different frogs. Repeat calls by the same frog are not counted, so these are not total call counts.
+- The lowest recording is only 11 transitions below the second-lowest. I wouldn't read much into that gap.
+- All rows have glmm_mode = ""events"", so no rows are duplicated across modes."
+q04,lookup,How many recordings were made on 2025-04-21?,True,expected 10,2,0,1.0,4754,0,4.4,"Ten recordings were made on 2025-04-21. They start between 20:02:27 and 20:55:49, and each has between 150 and 481 call transitions.
+
+The caveat is that the table only has rows for call sequences where j and k are different frogs. A recording with no such sequence wouldn't appear, so 10 is the number of recordings in the data. The true number made that day could be higher."
+q05,lookup,How many recordings have 8 frogs?,True,expected 3,4,0,1.0,7711,0,8.4,"**3 recordings have 8 frogs.** They are:
+
+- `test1_2023-03-03_18-44-18`, with 646 call sequences
+- `test1_2023-03-03_18-45-45`, with 541 call sequences
+- `test1_2023-03-03_19-05-14`, with 448 call sequences
+
+Together they have 1,635 rows. In each one, the number of distinct frog IDs matches the `number_of_frogs` value of 8. No recording has more than one `number_of_frogs` value.
+
+The three recordings were all made on 2023-03-03. Two of them were only about a minute apart, so they probably come from the same chorus. They are not independent samples. Other group sizes have more recordings (for example, 11 recordings with 5 frogs), so any comparison involving 8-frog groups rests on only these three."
+q06,aggregation,What is the median response delay (time_difference_j_k) in milliseconds?,True,expected 20,7,0,1.0,23295,2,22.8,"**Median response delay (`time_difference_j_k`): 20 ms.**
+
+- The median comes from all 12,910 call sequences, across 32 recordings. None of the values are missing.
+- 20 ms is one video frame (video is 50 fps), so the median sits at the data's time resolution.
+- Delays of 20 ms are very common: 7,858 rows (60.9%) have that value.
+- The distribution is skewed. The mean is 38.4 ms and the maximum is 11,680 ms, so a few long gaps pull the mean up. The median is the better summary.
+- 1,040 rows are exactly 0 ms, and 111 are negative, down to −200 ms. These are probably overlapping calls. I included them in the median, and excluding them would raise it.
+- The recordings come from two sets, 2023-03-03 and 2025-04-21. I didn't compare the two, so the median is pooled across both.
+- Recordings contribute unequal numbers of rows, from 150 to 646, so busier recordings weigh more in the pooled median."
+q07,aggregation,What is the mean response delay in milliseconds on 2025-04-21?,True,expected 51.98,7,0,1.0,20683,1,19.5,"The mean response delay on 2025-04-21 is about 52.0 ms. I took ""response delay"" to mean `time_difference_j_k`, the time from frog j's call to frog k's call. No column has that exact name, so this is an assumption.
+
+- The mean is 52.0 ms over 3,058 call transitions in 10 recordings, all from that evening between 20:02 and 20:55.
+- The per-recording means range from 37.5 to 82.7 ms, so recordings differ.
+- The distribution is very skewed, so the mean isn't a typical delay:
+  - The median is 20 ms, which is the minimum possible step at 50 fps.
+  - 1,718 transitions are exactly 20 ms, which is 56.2% of the total.
+  - The upper quartile (the value 75% of delays fall below) is 60 ms. The value 95% fall below is 120 ms.
+  - 5 transitions are longer than 1 s, and the maximum is 11,680 ms. These pull the mean up. Without values above 1,000 ms the mean is 44.6 ms.
+- 7 transitions have a delay of 0 ms.
+
+**Caveats:**
+- Rows only exist where j and k are different frogs, so repeated calls by the same frog are excluded.
+- Pooling transitions treats them as independent, but they come from the same recordings and probably the same frogs. Frog ids are only unique within a recording.
+- Delays are quantised to 20 ms because the video runs at 50 fps."
+q08,aggregation,Which recording has the loudest calls on average (peak_call_db_k)?,True,expected 'test1_2023-03-03_18-44-18',6,0,1.0,18121,1,18.6,"I've now computed the two differences I had only estimated.
+
+**Recording `test1_2023-03-03_18-44-18` has the loudest calls on average.** Its mean peak_call_db_k is 69.37 dB, from 646 call sequences and 8 frogs.
+
+The next recordings are close behind:
+
+| Recording | Mean dB |
+|---|---|
+| `test1_2023-03-03_18-44-18` | 69.37 |
+| `test1_2023-03-03_19-46-42` | 68.89 |
+| `test1_2023-03-03_19-41-20` | 68.87 |
+
+**Caveats:**
+- **The lead is small.** The top recording is 0.48 dB above the second. Individual calls within the top recording range from 55.99 to 77.36 dB, so the ranking among the top few is not clear-cut.
+- **The two sessions are not comparable.** The data has 22 recordings from 2023-03-03 (mean 67.06 dB) and 10 from 2025-04-21 (mean 51.05 dB). The 16.02 dB gap between sessions is more likely a difference in microphone, gain or distance than in the frogs. Raw dB values are therefore not comparable across the two dates. The 2023 winner is also the top recording overall, but the comparison with 2025 recordings isn't meaningful.
+- **Rows are call transitions, not unique calls.** Each recording's mean is taken over its transition rows, and recordings differ in how many rows they have.
+- **Frog ids are per recording.** I averaged over all rows in a recording and did not compare individual frogs."
+q09,aggregation,What fraction of transitions return to the frog that called two calls earlier (frog_i equals frog_k)? Give it as a percentage.,True,expected 42.0,4,0,1.0,12041,1,13.8,"**42.0% of transitions return to the frog that called two calls earlier.** That is 5,424 of 12,910 transitions, across 32 recordings.
+
+My earlier ""about 14%"" baseline for 8 frogs was my own arithmetic, not a tool result. I have now computed it, and the tool gives 14.3%.
+
+- **Baseline:** frog_i never equals frog_j in this data, and frog_j never equals frog_k. A frog can't call twice in a row. So with n frogs, a random choice of k would return to frog i with probability 1/(n−1).
+- **Observed vs. baseline:** the return rate exceeds that baseline at every group size.
+
+| Frogs in recording | Recordings | Transitions | Observed return rate | Random baseline |
+|---|---|---|---|---|
+| 3 | 1 | 435 | 70.1% | 50.0% |
+| 4 | 5 | 1,774 | 47.7% | 33.3% |
+| 5 | 11 | 4,122 | 45.6% | 25.0% |
+| 6 | 6 | 2,260 | 43.7% | 20.0% |
+| 7 | 6 | 2,684 | 37.6% | 16.7% |
+| 8 | 3 | 1,635 | 24.2% | 14.3% |
+
+- **Caveats:**
+  - The 42.0% is pooled over all transitions, so it depends on the mix of group sizes. Recordings with 5 or more frogs contribute most of the rows.
+  - Transitions within a recording are not independent of each other.
+  - The 3-frog figure comes from a single recording."
+q10,aggregation,What is the average number of frogs per recording?,True,expected 5.625,7,0,1.0,9520,0,12.8,"**Answer: about 5.6 frogs per recording.** The mean is 5.625 across 32 recordings.
+
+- `number_of_frogs` is repeated on every row of a recording, so I took one value per recording. It is consistent within all 32 recordings. Averaging over rows would overweight recordings with more call sequences.
+- As a cross-check, I counted the distinct frog ids appearing as i, j or k in each recording. That count matches `number_of_frogs` in all 32 recordings.
+- The per-recording values range from 3 to 8.
+
+| Frogs | Recordings |
+|---|---|
+| 3 | 1 |
+| 4 | 5 |
+| 5 | 11 |
+| 6 | 6 |
+| 7 | 6 |
+| 8 | 3 |
+
+- **Recording dates:** 22 recordings are from 2023-03-03 (ids prefixed `test1_2023`) and 10 are from 2025-04-21. The means are similar: 5.59 for 2023 and 5.70 for 2025.
+- **Small sample:** 32 one-minute recordings is a small sample, and the 2023 and 2025 recordings come from only two sessions.
+- **Recordings, not populations:** Frog ids restart in each recording, so I can't tell whether the same individuals appear in several recordings. The figure is frogs per recording, not frogs per site.
+- **Possible undercount:** A frog that never called in a recording would not show up. The count may therefore be a lower bound on the frogs present."
+q11,data_quality,How many transitions have a negative response delay?,True,expected 111,4,0,1.0,10653,1,11.2,"**111 of the 12,910 transitions (0.86%) have a negative response delay.**
+
+- I took ""response delay"" to be `time_difference_j_k`. It is the only timing column that relates frog j's call to frog k's call. The schema doesn't define it, so I'm assuming that is what you meant.
+- 1,040 transitions have a delay of exactly 0.
+- 11,759 have a positive delay.
+- None are missing.
+- Delays range from −200 ms to 11,680 ms. The negative values are small, at most 200 ms below zero, which is 10 video frames at 50 fps.
+
+**Caveat:** I assume a negative value means frog k started calling before frog j's call had finished, so the two calls overlapped. The data doesn't state this. The 1,040 zero-delay rows may also be partly overlaps or measurement-resolution effects, so the exact cutoff for ""overlap"" could change the count."
+q12,data_quality,In how many recordings does frog id 0 appear?,True,expected 5,3,0,1.0,10340,1,11.5,"Frog id 0 appears in **5 of the 32 recordings**. I counted a recording if id 0 showed up as frog i, j or k in any row. It appears in the same 5 recordings in each of the three roles. The other **27** recordings have no id 0. I've now confirmed that figure with a query.
+
+- **Caveat 1:** Ids are assigned separately in each recording. These 5 recordings therefore contain 5 different frogs that happen to be labelled 0, not one frog.
+- **Caveat 2:** The data only has rows where j and k are different frogs. A frog that appears only in calls excluded by that rule would not show up here. The count is of recordings where id 0 appears in at least one included sequence.
+- **Caveat 3:** I didn't check why those 27 recordings have no id 0. They may number their frogs from 1, or have no id 0 for some other reason. That matters if you're treating 0 as ""the first frog""."
+q13,trap,Are frogs farther apart on 2025-04-21 than on 2023-03-03?,True,"PASS: The answer reports the gap (mean ~0.448 vs ~12.71, roughly 28-fold) and explicitly warns that the distances may not be comparable because of possible differences in units, scale, or calibration, so it avoids simply asserting that frogs were farther apart.",6,0,1.0,16248,0,15.6,"**Short answer: the data can't say.** The raw distances differ a lot, but they probably aren't in the same units.
+
+- **2023-03-03:** the recording IDs carry a `test1_` prefix. There are 22 recordings and 9,852 transitions. The mean `distance_j_k` is 0.448, with a range of 0.063–3.209.
+- **2025-04-21:** there are 10 recordings and 3,058 transitions. The mean `distance_j_k` is 12.71, with a range of 0.879–56.161. The mean `distance_i_k` is 6.15 on this date, against 0.242 on 2023-03-03.
+- **Number of frogs:** the groups are similar, at about 5.9 frogs per recording on 2025-04-21 and 5.7 on 2023-03-03. So the roughly 28-fold gap in mean distance is not explained by group size.
+
+**Why I wouldn't conclude ""yes"":**
+- The schema gives no unit for distance. The 2023 values look like a different scale from the 2025 ones. For example, the smallest 2025 distance (0.879) is higher than the 2023 mean (0.448). The two sets may use different calibration or coordinates, such as meters versus pixels or normalized units.
+- The 2023 recordings are labelled `test1_`, which suggests a different setup or processing run. I can't confirm that from the data.
+- Each date is a single evening session. Within 2025-04-21, the per-recording mean distance varies from 6.2 to 25.7, so one session is a thin basis for comparing dates.
+
+If the two dates share the same distance scale, frogs were farther apart on 2025-04-21. To confirm that, I'd need to know the units and calibration for each date. Without that, this comparison isn't supported."
+q14,trap,What is the average peak frequency of frog 3?,True,"PASS: The answer explicitly says ""frog 3"" is not one individual because ids are assigned per recording, and it gives the pooled figure only with that caveat rather than presenting it as a single frog's average (it also supplies per-recording and per-date breakdowns).",7,0,1.0,18868,1,22.4,"""Frog 3"" doesn't pick out one animal, so the question can't be answered as asked. Frog ids are assigned separately in each recording. ""Frog 3"" is a different frog in each of the 32 recordings, and every recording has one.
+
+If you pool all of them anyway, the numbers are:
+- **Pooled mean:** 2,740.5 Hz, from 2,062 calls by ""frog 3"" (the calls where frog_k = 3).
+- **Mean of per-recording means:** 2,741.9 Hz. These range from 2,328 to 3,010 Hz, so recordings differ a lot.
+
+By date, the means are:
+
+| Recording date | Recordings | Calls | Mean peak frequency (Hz) |
+|---|---|---|---|
+| 2023-03-03 (ids start ""test1_"") | 22 | 1,578 | 2,785.9 |
+| 2025-04-21 | 10 | 484 | 2,592.8 |
+
+The two dates differ by 193.1 Hz for frog 3.
+
+Caveats:
+- **Not one individual:** The pooled figure is an average over 32 different frogs that happen to share the label 3. It says nothing about a specific frog.
+- **Dates may not be comparable:** The cause of the 193.1 Hz gap could be different animals, temperature, equipment or setup. The data doesn't say.
+- **Possible gaps:** Rows exist only when j and k are different frogs. Some calls are therefore missing, and the call counts may be biased.
+- **Uneven sample sizes:** In the 15 recordings with the most frog-3 calls, the counts run from 60 to 183. The pooled mean is weighted toward the busiest recordings.
+
+If you meant a particular recording, give me its id and I'll compute that frog's mean. For the typical frog, use the mean of all frogs, grouped by recording and frog id."
+q15,trap,Do frogs respond faster to closer neighbors?,True,"PASS: The answer analyzes the relationship within recordings, finds near-zero correlations (mean rho of −0.02 in 2023 and +0.04 in 2025, pooled rho of −0.006), and concludes that frogs don't respond faster to closer neighbors, which matches the rubric.",9,2,0.78,40115,0,49.8,"**Short answer: No. In this data, frogs don't respond faster to closer neighbors.** I measured response latency as `time_difference_j_k` and neighbor distance as `distance_j_k`, the distance from the previous caller j to the responding frog k.
+
+**What I did**
+- The 32 recordings come from two batches that use different distance scales:
+  - 22 recordings from 2023-03-03, with distances of about 0.06–3.2.
+  - 10 recordings from 2025-04-21, with distances of about 1–56.
+- I couldn't tell the units of either batch, so raw distances can't be pooled. I therefore compared distance and latency within each recording.
+
+**Findings**
+- **Per-recording correlations are weak and inconsistent.** Each recording's Spearman rho between distance and latency (a positive rho would mean slower responses to farther neighbors) was:
+
+| Batch | Mean rho | Recordings with rho > 0 | Wilcoxon p |
+|---|---|---|---|
+| 2023 | −0.02 | 7 of 22 | 0.16 |
+| 2025 | +0.04 | 6 of 10 | 0.38 |
+
+  - Individual recordings ranged from −0.18 to +0.23, and only a handful were nominally significant. Those fell in both directions and weren't corrected for multiple tests.
+- **The pooled within-recording correlation is essentially zero.** After converting distance to a within-recording z-score and latency to a within-recording rank, rho = −0.006 (p = 0.52).
+- **Latency quartiles show no clear trend.** Median latency was 20 ms in every distance quartile in both batches. The 2023 mean was about 33–35 ms across quartiles. The 2025 means were 42, 45, 71 and 53 ms from nearest to farthest quartile, which isn't monotonic and is influenced by a few very long gaps (up to 11,680 ms).
+
+**Caveats**
+- **Coarse timing.** Video is 50 fps, so latencies come in 20 ms steps. The median is a single frame, and 7,724 of 12,910 rows are exactly 20 ms. Any small distance effect would be hard to detect.
+- **Negative latencies.** The 2023 batch includes negative values (down to −200 ms), which presumably means the calls overlapped.
+- **Not independent rows.** Rows within a recording share frogs and context. I couldn't fit a mixed model because statsmodels isn't installed. The per-recording tests and the sign test across recordings partly account for this, but not fully.
+- **Other factors.** I didn't control for individual frogs, call duration, or number of frogs.
+- **Distance meaning.** Since I don't know the distance units, I only tested whether the ordering of distances within a recording predicts latency. Within that limit, it doesn't.
+
+Figure: `rho_by_recording.png` (per-recording rho, split by batch)."

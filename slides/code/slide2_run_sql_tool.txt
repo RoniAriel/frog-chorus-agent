@@ -1,0 +1,8 @@
+class SqlInput(BaseModel):
+    query: str = Field(description="A single SELECT statement.")
+
+@tool(args_schema=SqlInput)
+def run_sql(query: str) -> str:
+    """Run one read-only SQLite query. Returns at most 50 rows, so aggregate
+    (COUNT, AVG, GROUP BY) instead of selecting raw rows."""
+    ...

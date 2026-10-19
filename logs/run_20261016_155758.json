@@ -1,0 +1,23 @@
+{
+  "question": "How many transitions are there in total?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(*), COUNT(DISTINCT recording_id), COUNT(DISTINCT glmm_mode) FROM transitions"
+      },
+      "output": " COUNT(*)  COUNT(DISTINCT recording_id)  COUNT(DISTINCT glmm_mode)\n    12910                            32                          1"
+    },
+    {
+      "step": 3,
+      "answer": "There are **12,910 transitions** in total. Each row in the `transitions` table is one call sequence (i → j → k, with j and k different frogs).\n\nThe rows come from 32 distinct recordings. Frog ids are assigned separately in each recording, so any per-frog counts need to be grouped by recording and frog id together."
+    }
+  ]
+}

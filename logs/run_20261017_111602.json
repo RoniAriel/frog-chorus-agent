@@ -1,0 +1,63 @@
+{
+  "question": "In how many recordings does frog id 0 appear?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1212
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 1805
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(DISTINCT recording_id) AS n_rec, (SELECT COUNT(DISTINCT recording_id) FROM transitions) AS total, (SELECT COUNT(DISTINCT recording_id) FROM transitions WHERE frog_k=0) AS as_k, (SELECT COUNT(DISTINCT recording_id) FROM transitions WHERE frog_j=0) AS as_j, (SELECT COUNT(DISTINCT recording_id) FROM transitions WHERE frog_i=0) AS as_i, (SELECT MIN(frog_i) FROM transitions) AS minid FROM transitions WHERE frog_i=0 OR frog_j=0 OR frog_k=0"
+      },
+      "output": " n_rec  total  as_k  as_j  as_i  minid\n     5     32     5     5     5      0"
+    },
+    {
+      "step": 3,
+      "tokens": 2191
+    },
+    {
+      "step": 3,
+      "verify": "rejected",
+      "unsupported": [
+        "27"
+      ]
+    },
+    {
+      "step": 4,
+      "tokens": 2406
+    },
+    {
+      "step": 4,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(*) AS recs_without_id0 FROM (SELECT recording_id FROM transitions GROUP BY recording_id HAVING SUM(frog_i=0 OR frog_j=0 OR frog_k=0)=0)"
+      },
+      "output": " recs_without_id0\n               27"
+    },
+    {
+      "step": 5,
+      "tokens": 2726
+    },
+    {
+      "step": 5,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 5,
+      "answer": "Frog id 0 appears in **5 of the 32 recordings**. I counted a recording if id 0 showed up as frog i, j or k in any row. It appears in the same 5 recordings in each of the three roles. The other **27** recordings have no id 0. I've now confirmed that figure with a query.\n\n- **Caveat 1:** Ids are assigned separately in each recording. These 5 recordings therefore contain 5 different frogs that happen to be labelled 0, not one frog.\n- **Caveat 2:** The data only has rows where j and k are different frogs. A frog that appears only in calls excluded by that rule would not show up here. The count is of recordings where id 0 appears in at least one included sequence.\n- **Caveat 3:** I didn't check why those 27 recordings have no id 0. They may number their frogs from 1, or have no id 0 for some other reason. That matters if you're treating 0 as \"the first frog\"."
+    }
+  ]
+}

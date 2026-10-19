@@ -1,0 +1,31 @@
+{
+  "question": "Which recording has the fewest transitions?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(*) n, MAX(number_of_frogs) f FROM transitions GROUP BY recording_id ORDER BY n ASC LIMIT 10"
+      },
+      "output": "             recording_id   n  f\n      2025-04-21_20-02-27 150  5\ntest1_2023-03-03_18-53-41 161  4\n      2025-04-21_20-55-49 164  4\n      2025-04-21_20-05-43 230  6\n      2025-04-21_20-36-54 255  6\ntest1_2023-03-03_18-54-58 297  5\n      2025-04-21_20-35-00 316  6\n      2025-04-21_20-49-04 329  5\n      2025-04-21_20-53-42 336  5\ntest1_2023-03-03_19-03-42 345  7"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(DISTINCT recording_id), MIN(recording_id), MAX(recording_id), COUNT(DISTINCT glmm_mode) FROM transitions"
+      },
+      "output": " COUNT(DISTINCT recording_id)   MIN(recording_id)         MAX(recording_id)  COUNT(DISTINCT glmm_mode)\n                           32 2025-04-21_20-02-27 test1_2023-03-03_19-49-56                          1"
+    },
+    {
+      "step": 3,
+      "answer": "**Recording 2025-04-21_20-02-27 has the fewest transitions, with 150.** It has 5 frogs.\n\nThe next lowest are:\n\n| Recording | Transitions | Frogs |\n|---|---|---|\n| test1_2023-03-03_18-53-41 | 161 | 4 |\n| 2025-04-21_20-55-49 | 164 | 4 |\n| 2025-04-21_20-05-43 | 230 | 6 |\n\nCaveats:\n- The data has 32 recordings. Each row only counts a call sequence where j and k are different frogs. These counts are therefore not the total number of calls.\n- The counts depend on how many frogs were calling and how active they were. They don't show recording quality or length. Recordings are each about a minute, but I didn't check their exact durations.\n- Some recording IDs start with \"test1_\" and come from 2023, while others are from 2025. I don't know whether those two groups were recorded under the same conditions, so be careful comparing counts across them."
+    }
+  ]
+}

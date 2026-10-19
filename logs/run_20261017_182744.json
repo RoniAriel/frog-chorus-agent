@@ -1,0 +1,97 @@
+{
+  "question": "Do frogs return to the frog that called two calls earlier more often than expected by chance?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1223
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 1833
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "select number_of_frogs, count(*) n, sum(frog_i=frog_k) ik, sum(frog_i=frog_j) ij, count(distinct recording_id) recs, avg(frog_i=frog_k) from transitions group by 1"
+      },
+      "output": " number_of_frogs    n   ik  ij  recs  avg(frog_i=frog_k)\n               3  435  305   0     1            0.701149\n               4 1774  847   0     5            0.477452\n               5 4122 1880   0    11            0.456089\n               6 2260  988   0     6            0.437168\n               7 2684 1008   0     6            0.375559\n               8 1635  396   0     3            0.242202"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "select glmm_mode, count(*), count(distinct recording_id) from transitions group by 1"
+      },
+      "output": "glmm_mode  count(*)  count(distinct recording_id)\n   events     12910                            32"
+    },
+    {
+      "step": 3,
+      "tokens": 2828
+    },
+    {
+      "step": 3,
+      "tool": "run_python",
+      "input": {
+        "code": "\ndf=query(\"select * from transitions\")\nres=[]\nfor rid,g in df.groupby('recording_id'):\n    frogs=set(g.frog_i)|set(g.frog_j)|set(g.frog_k)\n    Na=len(frogs); N=g.number_of_frogs.iloc[0]\n    # null 1: uniform over other active frogs\n    e1=(1/(Na-1))*len(g)\n    # null 2: k proportional to frequency as k, excluding j (and given i != j)\n    w=g.frog_k.value_counts(); \n    e2=0\n    for j,i in zip(g.frog_j,g.frog_i):\n        tot=w.sum()-w.get(j,0)\n        e2+=w.get(i,0)/tot\n    res.append((rid,N,Na,len(g),(g.frog_i==g.frog_k).sum(),e1,e2))\nr=pd.DataFrame(res,columns=['rid','N','Na','n','obs','e_unif','e_freq'])\nprint(r.to_string())\nprint(r[['n','obs','e_unif','e_freq']].sum())\nr['p_u']=r.e_unif/r.n; r['p_f']=r.e_freq/r.n; r['p_o']=r.obs/r.n\nprint((r.obs>r.e_freq).sum(), len(r))\n# permutation: shuffle k within recording preserving j!=k? simple: sign test + binomial approx\nfrom scipy import stats\nprint(stats.wilcoxon(r.p_o-r.p_f))\n"
+      },
+      "output": "                          rid  N  Na    n  obs      e_unif      e_freq\n0         2025-04-21_20-02-27  5   5  150   98   37.500000   47.234560\n1         2025-04-21_20-05-43  6   6  230  162   46.000000   57.185696\n2         2025-04-21_20-35-00  6   6  316  136   63.200000   77.060728\n3         2025-04-21_20-36-54  6   6  255   91   51.000000   58.563600\n4         2025-04-21_20-38-55  7   7  481  218   80.166667   96.967468\n5         2025-04-21_20-40-25  7   7  369  147   61.500000   72.385690\n6         2025-04-21_20-44-35  6   6  428  198   85.600000  117.628880\n7         2025-04-21_20-49-04  5   5  329  168   82.250000   91.176183\n8         2025-04-21_20-53-42  5   5  336  165   84.000000  110.928066\n9         2025-04-21_20-55-49  4   4  164  134   54.666667   91.067927\n10  test1_2023-03-03_18-40-41  7   7  512  234   85.333333  117.387430\n11  test1_2023-03-03_18-42-26  5   5  521  215  130.250000  164.292980\n12  test1_2023-03-03_18-44-18  8   8  646  125   92.285714  127.765664\n13  test1_2023-03-03_18-45-45  8   8  541  104   77.285714   97.216473\n14  test1_2023-03-03_18-52-07  5   5  354  193   88.500000  115.029391\n15  test1_2023-03-03_18-53-41  4   4  161   99   53.666667   74.559431\n16  test1_2023-03-03_18-54-58  5   5  297  125   74.250000   76.968407\n17  test1_2023-03-03_18-57-41  5   5  359  197   89.750000  112.121960\n18  test1_2023-03-03_19-00-48  5   5  380  182   95.000000  113.559256\n19  test1_2023-03-03_19-02-21  5   5  352  230   88.000000  169.320165\n20  test1_2023-03-03_19-03-42  7   7  345  139   57.500000   77.358338\n21  test1_2023-03-03_19-05-14  8   8  448  167   64.000000   82.225216\n22  test1_2023-03-03_19-06-41  7   7  433   93   72.166667   81.092132\n23  test1_2023-03-03_19-08-26  6   6  554  186  110.800000  148.168252\n24  test1_2023-03-03_19-12-43  3   3  435  305  217.500000  287.527319\n25  test1_2023-03-03_19-14-40  4   4  535  226  178.333333  218.688072\n26  test1_2023-03-03_19-39-15  5   5  423  182  105.750000  165.735492\n27  test1_2023-03-03_19-41-20  7   7  544  177   90.666667  133.956044\n28  test1_2023-03-03_19-43-19  6   6  477  215   95.400000  163.648823\n29  test1_2023-03-03_19-44-40  4   4  429  192  143.000000  180.651555\n30  test1_2023-03-03_19-46-42  5   5  621  125  155.250000  164.031724\n31  test1_2023-03-03_19-49-56  4   4  485  196  161.666667  197.172369\nn         12910.000000\nobs        5424.000000\ne_unif     2972.238095\ne_freq     3888.675290\ndtype: float64\n29 32\nWilcoxonResult(statistic=np.float64(12.0), pvalue=np.float64(3.259629011154175e-08))\n"
+    },
+    {
+      "step": 4,
+      "tokens": 5047
+    },
+    {
+      "step": 4,
+      "verify": "rejected",
+      "unsupported": [
+        "1.8",
+        "1.4",
+        "33"
+      ]
+    },
+    {
+      "step": 5,
+      "tokens": 5460
+    },
+    {
+      "step": 5,
+      "tool": "run_python",
+      "input": {
+        "code": "\ntot=r[['n','obs','e_unif','e_freq']].sum()\nprint(tot.obs/tot.n, tot.e_unif/tot.n, tot.e_freq/tot.n)\nprint(tot.obs/tot.e_unif, tot.obs/tot.e_freq)\ng=r.groupby('N')[['n','obs','e_unif','e_freq']].sum()\ng['p_obs']=g.obs/g.n; g['p_unif']=g.e_unif/g.n; g['p_freq']=g.e_freq/g.n\nprint(g.round(3))\n"
+      },
+      "output": "\nERROR: NameError: name 'r' is not defined"
+    },
+    {
+      "step": 6,
+      "tokens": 5977
+    },
+    {
+      "step": 6,
+      "tool": "run_python",
+      "input": {
+        "code": "\ndf=query(\"select * from transitions\")\nres=[]\nfor rid,g in df.groupby('recording_id'):\n    Na=len(set(g.frog_i)|set(g.frog_j)|set(g.frog_k)); N=g.number_of_frogs.iloc[0]\n    w=g.frog_k.value_counts(); e2=0\n    for j,i in zip(g.frog_j,g.frog_i):\n        e2+=w.get(i,0)/(w.sum()-w.get(j,0))\n    res.append((rid,N,len(g),(g.frog_i==g.frog_k).sum(),len(g)/(Na-1),e2))\nr=pd.DataFrame(res,columns=['rid','N','n','obs','e_unif','e_freq'])\ntot=r[['n','obs','e_unif','e_freq']].sum()\nprint(tot.obs/tot.n, tot.e_unif/tot.n, tot.e_freq/tot.n)\nprint(tot.obs/tot.e_unif, tot.obs/tot.e_freq)\ng=r.groupby('N')[['n','obs','e_unif','e_freq']].sum()\ng['p_obs']=g.obs/g.n; g['p_unif']=g.e_unif/g.n; g['p_freq']=g.e_freq/g.n\nprint(g.round(3))\n"
+      },
+      "output": "0.4201394268009295 0.23022758289992992 0.301214197509443\n1.8248874505343096 1.3948194682548394\n      n   obs    e_unif    e_freq  p_obs  p_unif  p_freq\nN                                                       \n3   435   305   217.500   287.527  0.701   0.500   0.661\n4  1774   847   591.333   762.139  0.477   0.333   0.430\n5  4122  1880  1030.500  1330.398  0.456   0.250   0.323\n6  2260   988   452.000   622.256  0.437   0.200   0.275\n7  2684  1008   447.333   579.147  0.376   0.167   0.216\n8  1635   396   233.571   307.207  0.242   0.143   0.188\n"
+    },
+    {
+      "step": 7,
+      "tokens": 6958
+    },
+    {
+      "step": 7,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 7,
+      "answer": "I recomputed the figures and found an error in my earlier answer. For 3 frogs, the uniform baseline is 50%, not the 33% I wrote. With 3 frogs, k has only two candidates besides j, so chance is 1/2. The ratios of 1.8 and 1.4 are now confirmed by the tool output.\n\n**Corrected answer:** Yes. Frogs return to the frog that called two calls earlier more often than chance predicts. This held in 29 of 32 recordings.\n\n| | Share of sequences where k = i |\n|---|---|\n| Observed | 42.0% (5,424 of 12,910) |\n| Uniform null (k equally likely among the frogs other than j) | 23.0% |\n| Call-share null (k drawn by each frog's own call share, excluding j) | 30.1% |\n\n- Observed returns are 1.82 times the uniform expectation and 1.39 times the call-share expectation.\n- The paired Wilcoxon test on per-recording proportions gave p ≈ 3×10⁻⁸. The sequences overlap and are not independent, so treat that p-value as optimistic.\n\n**By group size** (observed, uniform null, call-share null):\n\n| Frogs | Observed | Uniform | Call-share |\n|---|---|---|---|\n| 3 | 70.1% | 50.0% | 66.1% |\n| 4 | 47.7% | 33.3% | 43.0% |\n| 5 | 45.6% | 25.0% | 32.3% |\n| 6 | 43.7% | 20.0% | 27.5% |\n| 7 | 37.6% | 16.7% | 21.6% |\n| 8 | 24.2% | 14.3% | 18.8% |\n\nThe excess is real at every group size. It is small for 3 frogs once call share is accounted for.\n\n**Caveats**\n- The data can't separate a true \"answer the frog before last\" tendency from simple alternation between two dominant callers.\n- The call-share null is inflated by any back-and-forth pattern, so it is conservative.\n- Some group sizes come from few recordings: 3 frogs from 1 recording and 8 frogs from 3.\n- I didn't test for a difference between the 2023 and 2025 sessions."
+    }
+  ]
+}

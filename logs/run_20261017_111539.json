@@ -1,0 +1,84 @@
+{
+  "question": "What is the average number of frogs per recording?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1209
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 2023
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "WITH r AS (SELECT recording_id, COUNT(*) n_rows, MIN(number_of_frogs) mn, MAX(number_of_frogs) mx FROM transitions GROUP BY recording_id)\nSELECT COUNT(*) n_rec, SUM(mn<>mx) inconsistent, AVG(mn) avg_frogs, MIN(mn), MAX(mx), AVG(n_rows), MIN(n_rows) FROM r;"
+      },
+      "output": " n_rec  inconsistent  avg_frogs  MIN(mn)  MAX(mx)  AVG(n_rows)  MIN(n_rows)\n    32             0      5.625        3        8     403.4375          150"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(*) FROM transitions WHERE number_of_frogs IS NULL;"
+      },
+      "output": " COUNT(*)\n        0"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT number_of_frogs, COUNT(DISTINCT recording_id) recs FROM transitions GROUP BY 1 ORDER BY 1;"
+      },
+      "output": " number_of_frogs  recs\n               3     1\n               4     5\n               5    11\n               6     6\n               7     6\n               8     3"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,10) d, COUNT(DISTINCT recording_id) recs FROM transitions GROUP BY 1;"
+      },
+      "output": "         d  recs\n2025-04-21    10\ntest1_2023    22"
+    },
+    {
+      "step": 3,
+      "tokens": 2780
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "WITH r AS (SELECT recording_id, MIN(number_of_frogs) n FROM transitions GROUP BY recording_id)\nSELECT CASE WHEN recording_id LIKE 'test1%' THEN 'test1_2023' ELSE 'other' END g, COUNT(*), AVG(n), MIN(recording_id), MAX(recording_id) FROM r GROUP BY 1;"
+      },
+      "output": "         g  COUNT(*)   AVG(n)         MIN(recording_id)         MAX(recording_id)\n     other        10 5.700000       2025-04-21_20-02-27       2025-04-21_20-55-49\ntest1_2023        22 5.590909 test1_2023-03-03_18-40-41 test1_2023-03-03_19-49-56"
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "WITH f AS (SELECT recording_id, frog_i f FROM transitions UNION SELECT recording_id, frog_j FROM transitions UNION SELECT recording_id, frog_k FROM transitions),\no AS (SELECT recording_id, COUNT(*) obs FROM f GROUP BY 1),\nr AS (SELECT recording_id, MIN(number_of_frogs) n FROM transitions GROUP BY 1)\nSELECT COUNT(*), SUM(obs=n), SUM(obs<n), SUM(obs>n), AVG(obs) FROM o JOIN r USING(recording_id);"
+      },
+      "output": " COUNT(*)  SUM(obs=n)  SUM(obs<n)  SUM(obs>n)  AVG(obs)\n       32          32           0           0     5.625"
+    },
+    {
+      "step": 4,
+      "tokens": 3508
+    },
+    {
+      "step": 4,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 4,
+      "answer": "**Answer: about 5.6 frogs per recording.** The mean is 5.625 across 32 recordings.\n\n- `number_of_frogs` is repeated on every row of a recording, so I took one value per recording. It is consistent within all 32 recordings. Averaging over rows would overweight recordings with more call sequences.\n- As a cross-check, I counted the distinct frog ids appearing as i, j or k in each recording. That count matches `number_of_frogs` in all 32 recordings.\n- The per-recording values range from 3 to 8.\n\n| Frogs | Recordings |\n|---|---|\n| 3 | 1 |\n| 4 | 5 |\n| 5 | 11 |\n| 6 | 6 |\n| 7 | 6 |\n| 8 | 3 |\n\n- **Recording dates:** 22 recordings are from 2023-03-03 (ids prefixed `test1_2023`) and 10 are from 2025-04-21. The means are similar: 5.59 for 2023 and 5.70 for 2025.\n- **Small sample:** 32 one-minute recordings is a small sample, and the 2023 and 2025 recordings come from only two sessions.\n- **Recordings, not populations:** Frog ids restart in each recording, so I can't tell whether the same individuals appear in several recordings. The figure is frogs per recording, not frogs per site.\n- **Possible undercount:** A frog that never called in a recording would not show up. The count may therefore be a lower bound on the frogs present."
+    }
+  ]
+}

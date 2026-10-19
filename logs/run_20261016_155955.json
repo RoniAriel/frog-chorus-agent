@@ -1,0 +1,47 @@
+{
+  "question": "Are frogs farther apart on 2025-04-21 than on 2023-03-03?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,10) d, COUNT(*) n, COUNT(DISTINCT recording_id) recs, AVG(distance_j_k) mj, MIN(distance_j_k) minj, MAX(distance_j_k) maxj, AVG(distance_i_k) mi, AVG(number_of_frogs) nf, SUM(distance_j_k IS NULL) nulls, GROUP_CONCAT(DISTINCT glmm_mode) g FROM transitions WHERE substr(recording_id,1,10) IN ('2025-04-21','2023-03-03') GROUP BY d"
+      },
+      "output": "         d    n  recs        mj  minj   maxj      mi       nf  nulls      g\n2025-04-21 3058    10 12.712457 0.879 56.161 6.14889 5.904186      0 events"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,4) y, COUNT(*) n, COUNT(DISTINCT recording_id) recs, AVG(distance_j_k) m, MIN(distance_j_k), MAX(distance_j_k) FROM transitions GROUP BY y"
+      },
+      "output": "   y    n  recs         m  MIN(distance_j_k)  MAX(distance_j_k)\n2025 3058    10 12.712457              0.879             56.161\ntest 9852    22  0.448301              0.063              3.209"
+    },
+    {
+      "step": 3,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,10) d, glmm_mode, COUNT(*) n, COUNT(DISTINCT recording_id) recs, AVG(distance_j_k) m, MIN(distance_j_k), MAX(distance_j_k), MIN(recording_id) ex FROM transitions GROUP BY d, glmm_mode"
+      },
+      "output": "         d glmm_mode    n  recs         m  MIN(distance_j_k)  MAX(distance_j_k)                        ex\n2025-04-21    events 3058    10 12.712457              0.879             56.161       2025-04-21_20-02-27\ntest1_2023    events 9852    22  0.448301              0.063              3.209 test1_2023-03-03_18-40-41"
+    },
+    {
+      "step": 4,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT substr(recording_id,1,16) d, COUNT(*) n, COUNT(DISTINCT recording_id) recs, AVG(distance_j_k) m, AVG(distance_i_k), AVG(number_of_frogs), MAX(time_difference_j_k) FROM transitions GROUP BY d ORDER BY d"
+      },
+      "output": "               d    n  recs         m  AVG(distance_i_k)  AVG(number_of_frogs)  MAX(time_difference_j_k)\n2025-04-21_20-02  150     1 25.721433           9.709387              5.000000                    1980.0\n2025-04-21_20-05  230     1 19.764109           5.692983              6.000000                    1660.0\n2025-04-21_20-35  316     1 14.342237           6.671601              6.000000                   11680.0\n2025-04-21_20-36  255     1 23.141714          16.287349              6.000000                    4300.0\n2025-04-21_20-38  481     1  7.315584           3.683597              7.000000                     340.0\n2025-04-21_20-40  369     1 13.172491           8.402702              7.000000                     380.0\n2025-04-21_20-44  428     1 11.308019           5.623250              6.000000                     460.0\n2025-04-21_20-49  329     1  7.285170           3.475967              5.000000                     600.0\n2025-04-21_20-53  336     1  6.191312           3.153473              5.000000                     520.0\n2025-04-21_20-55  164     1 14.274817           1.790817              4.000000                     500.0\ntest1_2023-03-03 9852    22  0.448301           0.242136              5.723102                    1360.0"
+    },
+    {
+      "step": 5,
+      "answer": "**I can't tell from this data.** The raw numbers say yes, but the two dates' distances are almost certainly on different scales.\n\n**What the data holds**\n- 2025-04-21 has 10 recordings and 3,058 transitions.\n- The 2023-03-03 recordings are labelled `test1_2023-03-03_…`, so they look like test or pilot recordings. There are 22 of them, with 9,852 transitions.\n- The two dates have a similar number of frogs per recording: about 5.9 on 2025-04-21 and 5.7 on 2023-03-03.\n\n**Distance between the calling frog and the previous caller (`distance_j_k`)**\n\n| | 2025-04-21 | 2023-03-03 (test1) |\n|---|---|---|\n| Mean | 12.7 | 0.45 |\n| Range | 0.88 – 56.2 | 0.06 – 3.2 |\n\nOn the raw numbers, 2025 distances are about 28 times larger. `distance_i_k` shows the same pattern: the mean is about 6.1 in 2025 and 0.24 in 2023.\n\n**Why I wouldn't conclude the frogs were farther apart**\n- The schema doesn't give units for distance. The 2023 maximum (3.2) is below the 2025 minimum (0.88) once you allow for the 2025 spread, and the two ranges barely overlap. A 28-fold gap with similar frog counts looks more like a different unit or calibration than a real change in spacing. Examples would be metres versus pixels, or a normalised versus a raw scale.\n- The 2023 data are test recordings, so the setup may have differed, for example camera position or arena size.\n- Distances also vary a lot between recordings within 2025. The per-recording mean ranges from 6.2 to 25.7, so conditions differ even within one night.\n\n**Caveat:** I can't test the units from within the data. If you can confirm that both dates use the same distance units and the same setup, then yes, 2025-04-21 distances are much larger. In that case I would compare per-recording means instead of pooling transitions, because the transitions within a recording are not independent. Without that confirmation, the comparison isn't valid."
+    }
+  ]
+}

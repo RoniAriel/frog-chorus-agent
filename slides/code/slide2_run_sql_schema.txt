@@ -1,0 +1,16 @@
+{
+  "name": "run_sql",
+  "input_schema": {
+    "properties": {
+      "query": {
+        "description": "A single SELECT statement.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "query"
+    ],
+    "type": "object"
+  },
+  "description": "Run one read-only SQLite query. Returns at most 50 rows, so aggregate (COUNT, AVG, GROUP BY) instead of selecting raw rows."
+}

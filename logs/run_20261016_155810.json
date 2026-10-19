@@ -1,0 +1,31 @@
+{
+  "question": "How many recordings were made on 2025-04-21?",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT COUNT(DISTINCT recording_id), COUNT(*), MIN(recording_id), MAX(recording_id) FROM transitions WHERE recording_id LIKE '2025-04-21%'"
+      },
+      "output": " COUNT(DISTINCT recording_id)  COUNT(*)   MIN(recording_id)   MAX(recording_id)\n                           10      3058 2025-04-21_20-02-27 2025-04-21_20-55-49"
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT DISTINCT recording_id FROM transitions WHERE recording_id LIKE '2025-04-21%'"
+      },
+      "output": "       recording_id\n2025-04-21_20-36-54\n2025-04-21_20-44-35\n2025-04-21_20-02-27\n2025-04-21_20-38-55\n2025-04-21_20-40-25\n2025-04-21_20-55-49\n2025-04-21_20-49-04\n2025-04-21_20-35-00\n2025-04-21_20-53-42\n2025-04-21_20-05-43"
+    },
+    {
+      "step": 3,
+      "answer": "There are **10 recordings** dated 2025-04-21 in the dataset. They were made between 20:02:27 and 20:55:49.\n\nTogether they contain 3,058 call-sequence rows.\n\n**Caveat:** The table only has rows for sequences where frogs j and k differ. A recording with no such sequences wouldn't appear, so the true number of recordings that day could be higher than 10."
+    }
+  ]
+}

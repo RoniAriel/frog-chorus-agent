@@ -1,0 +1,10 @@
+# Secrets
+.env
+
+# System and Python files
+.DS_Store
+__pycache__/
+
+# Personal work files
+scratch/
+slides/README.md

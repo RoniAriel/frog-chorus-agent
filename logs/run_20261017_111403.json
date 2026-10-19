@@ -1,0 +1,40 @@
+{
+  "question": "How many recordings were made on 2025-04-21?",
+  "steps": [
+    {
+      "step": 1,
+      "tokens": 1212
+    },
+    {
+      "step": 1,
+      "tool": "get_schema",
+      "input": {},
+      "output": "TABLE transitions (12910 rows): recording_id (TEXT), number_of_frogs (INTEGER), frog_i (INTEGER), frog_j (INTEGER), frog_k (INTEGER), distance_i_k (REAL), distance_j_k (REAL), time_duration_call_i (REAL), time_duration_call_j (REAL), time_difference_j_k (REAL), peak_call_hz_i (REAL), peak_call_hz_j (REAL), peak_call_hz_k (REAL), spectral_diff_j_k (REAL), spectral_diff_i_k (REAL), peak_call_db_i (REAL), peak_call_db_j (REAL), peak_call_db_k (REAL), peak_call_db_diff_j_k (REAL), peak_call_db_diff_i_k (REAL), glmm_mode (TEXT)"
+    },
+    {
+      "step": 2,
+      "tokens": 1609
+    },
+    {
+      "step": 2,
+      "tool": "run_sql",
+      "input": {
+        "query": "SELECT recording_id, COUNT(*) n FROM transitions WHERE recording_id LIKE '2025-04-21%' GROUP BY recording_id"
+      },
+      "output": "       recording_id   n\n2025-04-21_20-02-27 150\n2025-04-21_20-05-43 230\n2025-04-21_20-35-00 316\n2025-04-21_20-36-54 255\n2025-04-21_20-38-55 481\n2025-04-21_20-40-25 369\n2025-04-21_20-44-35 428\n2025-04-21_20-49-04 329\n2025-04-21_20-53-42 336\n2025-04-21_20-55-49 164"
+    },
+    {
+      "step": 3,
+      "tokens": 1933
+    },
+    {
+      "step": 3,
+      "verify": "passed",
+      "unsupported": []
+    },
+    {
+      "step": 3,
+      "answer": "Ten recordings were made on 2025-04-21. They start between 20:02:27 and 20:55:49, and each has between 150 and 481 call transitions.\n\nThe caveat is that the table only has rows for call sequences where j and k are different frogs. A recording with no such sequence wouldn't appear, so 10 is the number of recordings in the data. The true number made that day could be higher."
+    }
+  ]
+}
